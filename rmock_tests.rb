@@ -19,13 +19,13 @@ module RMock::Test
 
     def test_stub_method_with_no_arguments_will_return_preset_value
       mock = Mock.new
-      mock.stub(:ping).will_return('pong')
+      mock.stub(:ping).will {'pong'}
       assert_equal 'pong', mock.proxy.ping
     end
 
     def test_can_construct_mock_with_a_block
       mock = Mock.new do |m|
-        m.stub(:ping).will_return('pong')
+        m.stub(:ping).will {'pong'}
       end
       assert_equal 'pong', mock.proxy.ping
     end
@@ -70,22 +70,22 @@ module RMock::Test
 
     def test_can_call_a_stub_twice
       mock = Mock.new do |m|
-        m.stub(:bing).will_return('crosby')
+        m.stub(:bing).will {'crosby'}
       end
       2.times do assert_equal 'crosby', mock.proxy.bing end
     end
 
     def test_can_stub_a_method_with_an_argument
       mock = Mock.new do |m|
-        m.stub(:bing, 'who?').will_return('crosby')
+        m.stub(:bing, 'who?').will {'crosby'}
       end
       assert_equal 'crosby', mock.proxy.bing('who?')
     end
 
     def test_can_stub_a_method_twice_with_different_args
       mock = Mock.new do |m|
-        m.stub(:last_name?, 'marlon').will_return('brando')
-        m.stub(:last_name?, 'jimmy').will_return('cagney')
+        m.stub(:last_name?, 'marlon').will {'brando'}
+        m.stub(:last_name?, 'jimmy').will {'cagney'}
       end
       assert_equal 'cagney', mock.proxy.last_name?('jimmy')
       assert_equal 'brando', mock.proxy.last_name?('marlon')
@@ -111,28 +111,21 @@ module RMock::Test
 
     def test_can_stub_pre_existing_methods
       mock = Mock.new do |m|
-        m.stub(:to_s).will_return('foobar')
-      end
-      assert_equal 'foobar', mock.proxy.to_s
-    end
-
-    def test_can_stub_method_response_using_a_block
-      mock = Mock.new do |m|
-        m.stub(:to_s) { 'foobar'}
+        m.stub(:to_s).will {'foobar'}
       end
       assert_equal 'foobar', mock.proxy.to_s
     end
 
     def test_can_stub_method_that_expects_a_block
       mock = Mock.new do |m|
-        m.stub(:each, Proc) {}
+        m.stub(:each, Proc)
       end
       mock.proxy.each {}
     end
 
     def test_error_raised_if_block_not_provided_to_stubbed_method_that_wants_a_block
       mock = Mock.new do |m|
-        m.stub(:each, Proc) {}
+        m.stub(:each, Proc)
       end
       assert_raise AssertionFailedError do
         mock.proxy.each

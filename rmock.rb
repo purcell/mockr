@@ -13,8 +13,8 @@ module RMock
       block.call(self) if block
     end
 
-    def stub(method_name, *argspec, &block)
-      stub_for(method_name).add_handler(Matcher.new(argspec, block))
+    def stub(method_name, *argspec)
+      stub_for(method_name).add_handler(Matcher.new(argspec))
     end
 
     def expect(method_name, *argspec)
@@ -91,8 +91,8 @@ module RMock
       @argspec.inspect
     end
 
-    def will_return(result)
-      @response = lambda { result }
+    def will(&block)
+      @response = block
     end
   end
 
