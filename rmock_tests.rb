@@ -123,21 +123,24 @@ module RMock::Test
       assert_equal 'foobar', mock.proxy.to_s
     end
 
-#    def test_can_stub_method_that_expects_a_block
-#      mock = Mock.new do |m|
-#        m.stub(:each, Proc) {}
-#      end
-#      mock.proxy.each { }
-#    end
+    def test_can_stub_method_that_expects_a_block
+      mock = Mock.new do |m|
+        m.stub(:each, Proc) {}
+      end
+      mock.proxy.each {}
+    end
 
-#    def test_error_raised_if_block_not_provided_to_stubbed_method_that_wants_a_block
-#      mock = Mock.new do |m|
-#        m.stub(:each, Proc) {}
-#      end
-#      assert_raise AssertionFailedError do
-#        mock.proxy.each { }
-#    end
-
+    def test_error_raised_if_block_not_provided_to_stubbed_method_that_wants_a_block
+      mock = Mock.new do |m|
+        m.stub(:each, Proc) {}
+      end
+      assert_raise AssertionFailedError do
+        mock.proxy.each
+      end
+    end
   end
 
+
+  # TODO:
+  #  * Clearer error messages
 end

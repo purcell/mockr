@@ -7,25 +7,24 @@ module RMock
     attr_reader :proxy
 
     def initialize &block
-      @proxy = Object.new
-      @stubs = {}
       @expectations = []
       @satisfied_expectations = []
+      create_proxy
       block.call(self) if block
     end
 
     def stub(method_name, *argspec, &block)
-      ensure_stub(method_name).add_handler(MethodHandler.new(argspec, block))
+      stub_for(method_name).add_handler(Matcher.new(argspec, block))
     end
 
     def expect(method_name, *argspec)
-      handler = MethodHandler.new(argspec) do |satisfied|
+      handler = Matcher.new(argspec) do |satisfied|
         if @satisfied_expectations.include?(satisfied)
           raise AssertionFailedError.new("Unexpected extra call to #{method_name}")
         end
         @satisfied_expectations << satisfied
       end
-      @expectations << ensure_stub(method_name).add_handler(handler)
+      @expectations << stub_for(method_name).add_handler(handler)
       handler
     end
 
@@ -43,20 +42,31 @@ module RMock
 
     private
 
-    def ensure_stub(method_name)
-      return @stubs[method_name] if @stubs[method_name]
-      @stubs[method_name] = stub_method = StubMethod.new
-      class << @proxy; self end.send(:define_method, method_name) do |*args|
-        stub_method.call(*args)
-      end
-      stub_method
+    def create_proxy
+      @proxy = Object.new
+      #@proxy.extend Proxy
+      @stubs = @proxy.instance_eval '@stubs = {}'
     end
-    
+
+    def stub_for(method_name)
+      @stubs[method_name] ||= MockMethod.new(@proxy, method_name)
+    end
   end
 
   private
 
-  class MethodHandler
+  module Proxy
+    def send(method, *args, &block)
+      puts "send called for #{method}"
+      if stub = @stubs[method]
+        stub.call(*(args + block))
+      else
+        super
+      end
+    end
+  end
+
+  class Matcher
     def initialize(argspec, response=nil, &listener)
       @argspec = argspec
       @response = response
@@ -65,7 +75,11 @@ module RMock
     end
 
     def ===(args)
-      @argspec === args
+      return false if args.size > @argspec.size
+      @argspec.zip(args).each do |expected, actual|
+        return false unless expected === actual
+      end
+      true
     end
 
     def call
@@ -82,10 +96,16 @@ module RMock
     end
   end
 
-  class StubMethod
+  class MockMethod
     include ::Test::Unit
 
-    def initialize
+    def initialize(proxy, method_name)
+      proxy.instance_eval <<-EOF
+        def #{method_name.to_s}(*args, &block)
+          args << block if block
+          @stubs[:#{method_name}].call(*args)
+        end
+      EOF
       @handlers = []
     end
 
@@ -94,7 +114,7 @@ module RMock
     end
 
     def call(*args, &block)
-      args += block if block
+      args << block if block
       @handlers.each do |handler|
         return handler.call if handler === args
       end
