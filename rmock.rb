@@ -1,3 +1,4 @@
+require 'test/unit'
 
 module RMock
 
@@ -44,7 +45,6 @@ module RMock
 
     def create_proxy
       @proxy = Object.new
-      #@proxy.extend Proxy
       @stubs = @proxy.instance_eval '@stubs = {}'
     end
 
@@ -54,17 +54,6 @@ module RMock
   end
 
   private
-
-  module Proxy
-    def send(method, *args, &block)
-      puts "send called for #{method}"
-      if stub = @stubs[method]
-        stub.call(*(args + block))
-      else
-        super
-      end
-    end
-  end
 
   class Matcher
     def initialize(argspec, response=nil, &listener)
