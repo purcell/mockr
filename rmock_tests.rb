@@ -154,16 +154,28 @@ module RMock::Test
       assert_equal 'stringified', mock.proxy.to_s
     end
 
-#    def test_can_use_ranges_to_specify_argument_matches
-#      mock = Mock.new do |m|
-#        m.stub.between_1_and_5?(1..5).will { true }
-#        m.stub.between_1_and_5?(6..10).will { false }
-#      end
-#      mock.use do |proxy|
-#        assert_true proxy.between_1_and_5?(3)
-#        assert_false proxy.between_1_and_5?(7)
-#      end
-#    end
+    def test_can_use_ranges_to_specify_argument_matches
+      mock = Mock.new do |m|
+        m.stub_call(:between_1_and_5?, 1..5).will { true }
+        m.stub_call(:between_1_and_5?, 6..10).will { false }
+      end
+      mock.use do |proxy|
+        assert_equal true, proxy.between_1_and_5?(3)
+        assert_equal false, proxy.between_1_and_5?(7)
+      end
+    end
+
+    def test_can_use_ranges_in_pseudo_calls_to_specify_argument_matches
+      mock = Mock.new do |m|
+        m.stub.between_1_and_5?(1..5).will { true }
+        m.stub.between_1_and_5?(6..10).will { false }
+      end
+      mock.use do |proxy|
+        assert_equal true, proxy.between_1_and_5?(3)
+        assert_equal false, proxy.between_1_and_5?(7)
+      end
+    end
+
   end
 
 
@@ -172,4 +184,5 @@ module RMock::Test
   #  * Mocking constants
   #  * Namespaces for constants
   #  * Intercepting top-level calls such as File#open
+  #  * Explicit test for use of === in arg matching
 end

@@ -17,7 +17,7 @@ module RMock
     end
 
     def stub()
-      CallCapturer.new { |meth, args| stub_call(meth, *args) }
+      CallCapturer.new { |meth, *args| stub_call(meth, *args) }
     end
 
     def stub_call(method_name, *argspec)
@@ -72,7 +72,6 @@ module RMock
     end
 
     def ===(args)
-      #puts "matching #{args.size} args (#{args.inspect}) against #{(@argspec.map{|a| a.inspect}).inspect}"
       return false if args.size > @argspec.size
       @argspec.zip(args).each do |expected, actual|
         return false unless expected === actual
