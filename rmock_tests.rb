@@ -50,7 +50,7 @@ module RMock::Test
       mock = Mock.new do |m|
         m.expect(:bing)
       end
-      mock.proxy.bing
+      assert_nil mock.proxy.bing
     end
 
     def test_verify_after_calling_expected_method_with_no_args
@@ -90,6 +90,54 @@ module RMock::Test
       assert_equal 'cagney', mock.proxy.last_name?('jimmy')
       assert_equal 'brando', mock.proxy.last_name?('marlon')
     end
+
+    def test_error_raised_if_expected_method_called_twice
+      mock = Mock.new do |m|
+        m.expect(:some_method)
+      end
+      mock.proxy.some_method
+      assert_raise AssertionFailedError do mock.proxy.some_method end
+    end
+
+    def test_can_use_mock_with_block_in_order_to_have_verify_called_automatically
+      mock = Mock.new do |m|
+        m.expect(:some_method)
+        m.expect(:some_other_method)
+      end
+      assert_raise AssertionFailedError do
+        mock.use { |o| o.some_method }
+      end
+    end
+
+    def test_can_stub_pre_existing_methods
+      mock = Mock.new do |m|
+        m.stub(:to_s).will_return('foobar')
+      end
+      assert_equal 'foobar', mock.proxy.to_s
+    end
+
+    def test_can_stub_method_response_using_a_block
+      mock = Mock.new do |m|
+        m.stub(:to_s) { 'foobar'}
+      end
+      assert_equal 'foobar', mock.proxy.to_s
+    end
+
+#    def test_can_stub_method_that_expects_a_block
+#      mock = Mock.new do |m|
+#        m.stub(:each, Proc) {}
+#      end
+#      mock.proxy.each { }
+#    end
+
+#    def test_error_raised_if_block_not_provided_to_stubbed_method_that_wants_a_block
+#      mock = Mock.new do |m|
+#        m.stub(:each, Proc) {}
+#      end
+#      assert_raise AssertionFailedError do
+#        mock.proxy.each { }
+#    end
+
   end
 
 end

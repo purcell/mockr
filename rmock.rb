@@ -14,12 +14,15 @@ module RMock
       block.call(self) if block
     end
 
-    def stub(method_name, *argspec)
-      ensure_stub(method_name).add_handler(MethodHandler.new(argspec))
+    def stub(method_name, *argspec, &block)
+      ensure_stub(method_name).add_handler(MethodHandler.new(argspec, block))
     end
 
     def expect(method_name, *argspec)
       handler = MethodHandler.new(argspec) do |satisfied|
+        if @satisfied_expectations.include?(satisfied)
+          raise AssertionFailedError.new("Unexpected extra call to #{method_name}")
+        end
         @satisfied_expectations << satisfied
       end
       @expectations << ensure_stub(method_name).add_handler(handler)
@@ -33,6 +36,11 @@ module RMock
       end
     end
 
+    def use &block
+      block.call(proxy)
+      verify
+    end
+
     private
 
     def ensure_stub(method_name)
@@ -43,15 +51,16 @@ module RMock
       end
       stub_method
     end
-
+    
   end
 
   private
 
   class MethodHandler
-    def initialize(argspec, &listener)
+    def initialize(argspec, response=nil, &listener)
       @argspec = argspec
-      @to_return = nil
+      @response = response
+      @response ||= lambda { }
       @listener = listener
     end
 
@@ -61,7 +70,7 @@ module RMock
 
     def call
       @listener.call(self) if @listener
-      @to_return
+      @response.call
     end
 
     def to_s
@@ -69,7 +78,7 @@ module RMock
     end
 
     def will_return(result)
-      @to_return = result
+      @response = lambda { result }
     end
   end
 
@@ -84,7 +93,8 @@ module RMock
       @handlers << handler; handler
     end
 
-    def call(*args)
+    def call(*args, &block)
+      args += block if block
       @handlers.each do |handler|
         return handler.call if handler === args
       end
