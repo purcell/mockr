@@ -2,6 +2,8 @@ require 'test/unit'
 
 module RMock
 
+  ################################################################################
+
   class Mock
     include ::Test::Unit
 
@@ -14,11 +16,15 @@ module RMock
       block.call(self) if block
     end
 
-    def stub(method_name, *argspec)
+    def stub()
+      CallCapturer.new { |meth, args| stub_call(meth, *args) }
+    end
+
+    def stub_call(method_name, *argspec)
       stub_for(method_name).add_handler(Matcher.new(argspec))
     end
 
-    def expect(method_name, *argspec)
+    def expect_call(method_name, *argspec)
       handler = Matcher.new(argspec) do |satisfied|
         if @satisfied_expectations.include?(satisfied)
           raise AssertionFailedError.new("Unexpected extra call to #{method_name}")
@@ -53,7 +59,9 @@ module RMock
     end
   end
 
+  ################################################################################
   private
+  ################################################################################
 
   class Matcher
     def initialize(argspec, response=nil, &listener)
@@ -85,6 +93,8 @@ module RMock
     end
   end
 
+  ################################################################################
+
   class MockMethod
     include ::Test::Unit
 
@@ -108,6 +118,17 @@ module RMock
         return handler.call if handler === args
       end
       raise AssertionFailedError.new("no match for arguments: #{args.inspect}")
+    end
+  end
+
+  class CallCapturer
+    def initialize(&on_call)
+      @on_call = on_call
+      public_methods.each { |meth| remove_method(meth) }
+    end
+
+    def method_missing(meth, *args)
+      @on_call.call(meth, *args)
     end
   end
 
