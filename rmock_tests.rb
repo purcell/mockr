@@ -146,10 +146,30 @@ module RMock::Test
       end
       assert_equal 'two', mock.proxy.ping('one')
     end
-  end
 
+    def test_can_define_stubs_for_object_methods_using_pseudo_calls
+      mock = Mock.new do |m|
+        m.stub.to_s.will { 'stringified' }
+      end
+      assert_equal 'stringified', mock.proxy.to_s
+    end
+
+#    def test_can_use_ranges_to_specify_argument_matches
+#      mock = Mock.new do |m|
+#        m.stub.between_1_and_5?(1..5).will { true }
+#        m.stub.between_1_and_5?(6..10).will { false }
+#      end
+#      mock.use do |proxy|
+#        assert_true proxy.between_1_and_5?(3)
+#        assert_false proxy.between_1_and_5?(7)
+#      end
+#    end
+  end
 
 
   # TODO:
   #  * Clearer error messages
+  #  * Mocking constants
+  #  * Namespaces for constants
+  #  * Intercepting top-level calls such as File#open
 end

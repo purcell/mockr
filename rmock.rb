@@ -72,6 +72,7 @@ module RMock
     end
 
     def ===(args)
+      #puts "matching #{args.size} args (#{args.inspect}) against #{(@argspec.map{|a| a.inspect}).inspect}"
       return false if args.size > @argspec.size
       @argspec.zip(args).each do |expected, actual|
         return false unless expected === actual
@@ -124,9 +125,15 @@ module RMock
   class CallCapturer
     def initialize(&on_call)
       @on_call = on_call
-      public_methods.each { |meth| remove_method(meth) }
     end
-
+    public_methods.each do |meth|
+      next if %w(__id__ __send__ method_missing).include?(meth)
+      eval <<-EOF
+        def #{meth}(*args)
+          @on_call.call(:#{meth}, *args)
+        end
+      EOF
+    end
     def method_missing(meth, *args)
       @on_call.call(meth, *args)
     end
