@@ -1,3 +1,41 @@
+# = RMock - A Mock Object library inspired by JMock
+#
+# Copyright (c) 2005 Steve Purcell
+# Licenced under the same terms as Ruby itself
+#
+# == Introduction
+#
+# An instance of RMock::Mock can be programmed with responses to
+# methods calls expected during the course of a unit test.  At the
+# end of the test, the instance can verify whether its expectations
+# were met, signalling a test failure if they were not.
+#
+# Mocks distinguish between 'expected' method calls, which trigger
+# test failures if they are not made, and 'stub' method calls, which
+# are not verified.  'Expected' calls are typically those considered
+# critical to the proper use of the mocked class, and 'stub' calls are
+# those considered more flexible in their use.
+#
+# == Example
+#
+# We are testing a controller for the air pump in a new automatic
+# bicycle tyre inflator:
+#
+# class PumpTest < Test::Unit::TestCase
+#
+#   def test_inflates_in_5psi_increments
+#     gauge_mock = RMock::Mock.new
+#     gauge_mock.expects.pressure?.as { 95 }
+#     end
+#
+#     gauge_mock.use do |gauge|
+#       pump = Pump.new(pressure_gauge)
+#       pump.inflate_to(110)
+#     end
+#   end
+#
+
+
 require 'test/unit'
 
 module RMock
@@ -16,8 +54,12 @@ module RMock
       block.call(self) if block
     end
 
-    def stub()
-      CallCapturer.new { |meth, *args| stub_call(meth, *args) }
+    def stubs(&block)
+      CallCapturer.new(method(:stub_call))
+    end
+
+    def expects(&block)
+      CallCapturer.new(method(:expect_call))
     end
 
     def stub_call(method_name, *argspec)
@@ -88,7 +130,7 @@ module RMock
       @argspec.inspect
     end
 
-    def will(&block)
+    def as(&block)
       @response = block
     end
   end
@@ -122,16 +164,11 @@ module RMock
   end
 
   class CallCapturer
-    def initialize(&on_call)
+    def initialize(on_call)
       @on_call = on_call
     end
-    public_methods.each do |meth|
-      next if %w(__id__ __send__ method_missing).include?(meth)
-      eval <<-EOF
-        def #{meth}(*args)
-          @on_call.call(:#{meth}, *args)
-        end
-      EOF
+    public_instance_methods.each do |meth|
+      undef_method(meth) unless %w(__id__ __send__ method_missing).include?(meth)
     end
     def method_missing(meth, *args)
       @on_call.call(meth, *args)
