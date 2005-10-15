@@ -115,7 +115,7 @@ module RMock::Test
       mock.proxy.each {}
     end
 
-    def test_error_raised_if_block_not_provided_to_stubbed_method_that_wants_a_block
+    def test_error_raised_if_block_not_given_to_stubbed_method_wanting_a_block
       mock = Mock.new do |m| m.stubs.each(Proc) end
       assert_raise AssertionFailedError do
         mock.proxy.each
@@ -145,6 +145,15 @@ module RMock::Test
 
   end
 
+#  class AutoMockTest < Test::Unit::TestCase
+#    include RMock::TestCaseHelpers
+#
+#    def test_foo
+#      m = new_mock
+#      m.expects.foo.as { 'bar' }
+#    end
+#
+#  end
 
   # TODO:
   #  * Clearer error messages

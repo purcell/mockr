@@ -55,32 +55,17 @@ module RMock
     end
 
     def stubs(&block)
-      CallCapturer.new(method(:stub_call))
+      CallRecorder.new(method(:stub_call))
     end
 
     def expects(&block)
-      CallCapturer.new(method(:expect_call))
-    end
-
-    def stub_call(method_name, *argspec)
-      stub_for(method_name).add_handler(Matcher.new(argspec))
-    end
-
-    def expect_call(method_name, *argspec)
-      handler = Matcher.new(argspec) do |satisfied|
-        if @satisfied_expectations.include?(satisfied)
-          raise AssertionFailedError.new("Unexpected extra call to #{method_name}")
-        end
-        @satisfied_expectations << satisfied
-      end
-      @expectations << stub_for(method_name).add_handler(handler)
-      handler
+      CallRecorder.new(method(:expect_call))
     end
 
     def verify
       missing_expectations = @expectations - @satisfied_expectations
       if missing_expectations.any?
-        raise AssertionFailedError.new('Expected #{missing_expectations[0]} did not happen')
+        raise AssertionFailedError.new("Expected #{missing_expectations[0]} did not happen")
       end
     end
 
@@ -97,7 +82,36 @@ module RMock
     end
 
     def stub_for(method_name)
-      @stubs[method_name] ||= MockMethod.new(@proxy, method_name)
+      mock_method = @stubs[method_name]
+      unless mock_method
+        mock_method = @stubs[method_name]= MockMethod.new
+        install_method_in_proxy(method_name)
+      end
+      mock_method
+    end
+
+    def stub_call(method_name, *argspec)
+      stub_for(method_name).add_handler(CallMatcher.new(method_name, argspec))
+    end
+
+    def expect_call(method_name, *argspec)
+      handler = CallMatcher.new(method_name, argspec) do |satisfied|
+        if @satisfied_expectations.include?(satisfied)
+          raise AssertionFailedError.new("Unexpected extra call to #{method_name}")
+        end
+        @satisfied_expectations << satisfied
+      end
+      @expectations << stub_for(method_name).add_handler(handler)
+      handler
+    end
+
+    def install_method_in_proxy(method_name)
+      @proxy.instance_eval(<<-EOF)
+        def #{method_name.to_s}(*args, &block)
+          args << block if block
+          @stubs[:#{method_name}].call(*args)
+        end
+      EOF
     end
   end
 
@@ -105,8 +119,9 @@ module RMock
   private
   ################################################################################
 
-  class Matcher
-    def initialize(argspec, response=nil, &listener)
+  class CallMatcher
+    def initialize(method_name, argspec, response=nil, &listener)
+      @method_name = method_name
       @argspec = argspec
       @response = response
       @response ||= lambda { }
@@ -127,7 +142,7 @@ module RMock
     end
 
     def to_s
-      @argspec.inspect
+      "call to #{@method_name} with args #{@argspec.inspect}"
     end
 
     def as(&block)
@@ -140,13 +155,7 @@ module RMock
   class MockMethod
     include ::Test::Unit
 
-    def initialize(proxy, method_name)
-      proxy.instance_eval <<-EOF
-        def #{method_name.to_s}(*args, &block)
-          args << block if block
-          @stubs[:#{method_name}].call(*args)
-        end
-      EOF
+    def initialize
       @handlers = []
     end
 
@@ -163,7 +172,7 @@ module RMock
     end
   end
 
-  class CallCapturer
+  class CallRecorder
     def initialize(on_call)
       @on_call = on_call
     end
@@ -173,6 +182,27 @@ module RMock
     def method_missing(meth, *args)
       @on_call.call(meth, *args)
     end
+  end
+
+  module TestCaseHelpers
+
+    def new_mock
+      @mocks ||= []
+      @mocks << (mock = Mock.new)
+      mock
+    end
+
+    def teardown
+      verify_all_mocks
+    end
+
+    def verify_all_mocks
+      return unless @mocks
+      @mocks.each do |mock|
+        mock.verify
+      end
+    end
+
   end
 
 end
