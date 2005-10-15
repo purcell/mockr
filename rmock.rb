@@ -54,11 +54,11 @@ module RMock
       block.call(self) if block
     end
 
-    def stubs(&block)
+    def stubs
       CallRecorder.new(method(:stub_call))
     end
 
-    def expects(&block)
+    def expects
       CallRecorder.new(method(:expect_call))
     end
 
@@ -84,7 +84,7 @@ module RMock
     def stub_for(method_name)
       mock_method = @stubs[method_name]
       unless mock_method
-        mock_method = @stubs[method_name]= MockMethod.new
+        mock_method = @stubs[method_name]= Response.new
         install_method_in_proxy(method_name)
       end
       mock_method
@@ -152,7 +152,7 @@ module RMock
 
   ################################################################################
 
-  class MockMethod
+  class Response
     include ::Test::Unit
 
     def initialize
