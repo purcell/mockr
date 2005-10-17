@@ -1,5 +1,6 @@
 # = RMock - A Mock Object library inspired by JMock
 #
+
 # Copyright (c) 2005 Steve Purcell
 # Licenced under the same terms as Ruby itself
 #
@@ -120,11 +121,11 @@ module RMock
   ################################################################################
 
   class CallMatcher
-    def initialize(method_name, argspec, response=nil, &listener)
+
+    def initialize(method_name, argspec, &listener)
       @method_name = method_name
       @argspec = argspec
-      @response = response
-      @response ||= lambda { }
+      @response = lambda { }
       @listener = listener
     end
 
@@ -197,7 +198,7 @@ module RMock
     end
 
     def verify_all_mocks
-      return unless @mocks
+      return unless instance_variables.include?("@mocks")
       @mocks.each do |mock|
         mock.verify
       end
