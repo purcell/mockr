@@ -1,15 +1,16 @@
 #!/usr/bin/env ruby
 $VERBOSE = true if $0 == __FILE__
+$:.unshift(File.dirname(__FILE__) + "/../lib")
 
 require 'test/unit'
-require 'rmock'
+require 'mockr'
 
 
-module RMock::Test
+module Mockr::Test
 
   class MockTest < Test::Unit::TestCase
     include ::Test::Unit
-    include RMock
+    include Mockr
 
     def test_stub_call_with_no_arguments_returns_nil
       mock = Mock.new

@@ -1,4 +1,4 @@
-# = RMock - A Mock Object library inspired by JMock
+# = Mockr - A Mock Object library inspired by JMock
 #
 
 # Copyright (c) 2005 Steve Purcell
@@ -6,7 +6,7 @@
 #
 # == Introduction
 #
-# An instance of RMock::Mock can be programmed with responses to
+# An instance of Mockr::Mock can be programmed with responses to
 # methods calls expected during the course of a unit test.  At the
 # end of the test, the instance can verify whether its expectations
 # were met, signalling a test failure if they were not.
@@ -25,7 +25,7 @@
 # class PumpTest < Test::Unit::TestCase
 #
 #   def test_inflates_in_5psi_increments
-#     gauge_mock = RMock::Mock.new
+#     gauge_mock = Mockr::Mock.new
 #     gauge_mock.expects.pressure?.as { 95 }
 #     end
 #
@@ -39,7 +39,7 @@
 
 require 'test/unit'
 
-module RMock
+module Mockr
 
   ################################################################################
 
