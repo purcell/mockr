@@ -1,42 +1,3 @@
-# = Mockr - A Mock Object library inspired by JMock
-#
-
-# Copyright (c) 2005 Steve Purcell
-# Licenced under the same terms as Ruby itself
-#
-# == Introduction
-#
-# An instance of Mockr::Mock can be programmed with responses to
-# methods calls expected during the course of a unit test.  At the
-# end of the test, the instance can verify whether its expectations
-# were met, signalling a test failure if they were not.
-#
-# Mocks distinguish between 'expected' method calls, which trigger
-# test failures if they are not made, and 'stub' method calls, which
-# are not verified.  'Expected' calls are typically those considered
-# critical to the proper use of the mocked class, and 'stub' calls are
-# those considered more flexible in their use.
-#
-# == Example
-#
-# We are testing a controller for the air pump in a new automatic
-# bicycle tyre inflator:
-#
-# class PumpTest < Test::Unit::TestCase
-#
-#   def test_inflates_in_5psi_increments
-#     gauge_mock = Mockr::Mock.new
-#     gauge_mock.expects.pressure?.as { 95 }
-#     end
-#
-#     gauge_mock.use do |gauge|
-#       pump = Pump.new(pressure_gauge)
-#       pump.inflate_to(110)
-#     end
-#   end
-#
-
-
 require 'test/unit'
 
 module Mockr
@@ -48,6 +9,13 @@ module Mockr
 
     attr_reader :proxy
 
+    # Create a new Mock, with an optional initialisation block.  If provided,
+    # the block will be called with the new instance.
+    #
+    # Example:
+    #  Mock.new do |m|
+    #    m.stubs.some_method
+    #  end
     def initialize &block
       @expectations = []
       @satisfied_expectations = []
@@ -55,14 +23,45 @@ module Mockr
       block.call(self) if block
     end
 
+    # Tell the mock to respond to a call, optionally with specific parameters.
+    #
+    # The call can be called an arbitrary number of times by the client code
+    # without affecting the result of #verify.
+    #
+    # Parameters to the expected call will be used to match the actual parameters
+    # passed by client code later.  The match (===) method of the expectation
+    # parameter is used to determine whether the client's call matched this
+    # anticipated call.
+    #
+    # Examples:
+    #  mock.stubs.bang!
+    #  mock.stubs.ping.as { :pong }
+    #  mock.stubs.hello?(/World/).as { true }  # Respond with +true+ if called with a parameter for which <tt>/World/ === param</tt> is true
     def stubs
       CallRecorder.new(method(:stub_call))
     end
 
+    # Tell the mock to expect a call, optionally with specific parameters.
+    # If the call has not been made when #verify is called, #verify will fail
+    # with a Test::Unit::AssertionFailed.
+    #
+    # Parameters to the expected call will be used to match the actual parameters
+    # passed by client code later.  The match (===) method of the expectation
+    # parameter is used to determine whether the client's call matched this anticipated
+    # call.
+    #
+    # Examples:
+    #  mock.expects.bang!
+    #  mock.expects.ping.as { :pong }
+    #  mock.expects.safe?(1..10).as { true }  # Expect a call with a parameter for which <tt>(1..10) === param</tt>
     def expects
       CallRecorder.new(method(:expect_call))
     end
 
+    # Check that the expected calls to this mock were made, and
+    # raise a Test::Unit::AssertionFailed exception otherwise.  This
+    # method will be called automatically if you use the methods provided
+    # by TestCaseHelpers
     def verify
       missing_expectations = @expectations - @satisfied_expectations
       if missing_expectations.any?
@@ -120,7 +119,7 @@ module Mockr
   private
   ################################################################################
 
-  class CallMatcher
+  class CallMatcher # :nodoc:
 
     def initialize(method_name, argspec, &listener)
       @method_name = method_name
@@ -153,7 +152,7 @@ module Mockr
 
   ################################################################################
 
-  class Response
+  class Response # :nodoc:
     include ::Test::Unit
 
     def initialize
@@ -173,7 +172,7 @@ module Mockr
     end
   end
 
-  class CallRecorder
+  class CallRecorder # :nodoc:
     def initialize(on_call)
       @on_call = on_call
     end
@@ -185,18 +184,27 @@ module Mockr
     end
   end
 
+  # Include this module in your Test::Unit::TestCase in order to more conveniently
+  # use and verify mocks.
   module TestCaseHelpers
 
+    # Create a new mock and remember it so that it can be automatically
+    # verified when the test case completes
     def new_mock
       @mocks ||= []
       @mocks << (mock = Mock.new)
       mock
     end
 
-    def teardown
+    def teardown # :nodoc:
       verify_all_mocks
     end
 
+    # Verify all mocks that were created using #new_mock.
+    #
+    # Usually you will not
+    # need to call this method yourself -- it is called automatically unless
+    # you override #teardown for your own purposes
     def verify_all_mocks
       return unless instance_variables.include?("@mocks")
       @mocks.each do |mock|
