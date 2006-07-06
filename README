@@ -3,14 +3,17 @@
 Mockr is a pure Ruby library to support the Mock Objects approach to
 unit testing, and is inspired by Java's JMock.
 
-Several other Mock Object libraries exist for Ruby. Mockr has two main
+Several other Mock Object libraries exist for Ruby. In addition to its
+unusually natural syntax for setting expectations, Mockr has two main
 distinguishing features:
 
 1. Support for the distinction between mocking and stubbing
 2. A constraint-based mechanism for matching call parameters
 
 MockR was initially presented by author Steve Purcell at the
-2005 European Ruby Conference.
+2005 European Ruby Conference, and was written entirely test-first.
+
+For more information or to contact the author, see http://mockr.sanityinc.com.
 
 == Introduction
 
@@ -82,7 +85,7 @@ These tests would be satisfied by the following class:
 
 Home page
 
-* http://mockr.sanityinc.com/
+* http://mockr.sanityinc.com
 
 == Copyright
 

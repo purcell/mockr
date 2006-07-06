@@ -69,6 +69,9 @@ module Mockr
       end
     end
 
+    # Execute the given block and call #verify afterwards.  You are unlikely
+    # to use this method, since the methods in TestCaseHelpers render it
+    # somewhat redundant.
     def use &block
       block.call(proxy)
       verify
@@ -195,6 +198,8 @@ module Mockr
       @mocks << (mock = Mock.new)
       mock
     end
+
+    alias mock new_mock
 
     def teardown # :nodoc:
       verify_all_mocks
